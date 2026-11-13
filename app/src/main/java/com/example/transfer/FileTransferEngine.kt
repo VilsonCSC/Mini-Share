@@ -13,6 +13,7 @@ import com.example.model.TransferStats
 import com.example.model.TransferStatus
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import java.io.BufferedInputStream
@@ -21,6 +22,7 @@ import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 import java.net.InetAddress
@@ -31,6 +33,7 @@ import java.net.SocketException
 import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.coroutines.coroutineContext
 
 class FileTransferEngine(private val context: Context) {
 
@@ -42,6 +45,8 @@ class FileTransferEngine(private val context: Context) {
         private const val CODE_SKIP = 2
         private const val CODE_CANCELLED_MID = -1
         private const val CODE_EOF = 0
+        private const val CONNECT_MAX_ATTEMPTS = 25
+        private const val CONNECT_RETRY_DELAY_MS = 400L
     }
 
     private var serverSocket: ServerSocket? = null
@@ -69,7 +74,89 @@ class FileTransferEngine(private val context: Context) {
         serverSocket = null
     }
 
+    private suspend fun openPeerSocket(
+        isGroupOwner: Boolean,
+        groupOwnerAddress: String
+    ): Socket {
+        if (isGroupOwner) {
+            val srv = ServerSocket().apply {
+                reuseAddress = true
+                soTimeout = 30000
+                bind(InetSocketAddress(PORT))
+            }
+            serverSocket = srv
+            val accepted = srv.accept()
+            try {
+                srv.close()
+            } catch (_: Exception) {}
+            serverSocket = null
+            accepted.tcpNoDelay = true
+            accepted.soTimeout = 60000
+            clientSocket = accepted
+            return accepted
+        } else {
+            val peerAddress = resolveLocalPeerAddress(groupOwnerAddress)
+            var lastException: Exception? = null
+            repeat(CONNECT_MAX_ATTEMPTS) { attempt ->
+                if (!isRunning.get() || !coroutineContext.isActive) {
+                    throw CancellationException("Transfer cancelled")
+                }
+                val socket = Socket()
+                try {
+                    val localP2pAddress = findLocalP2pInterfaceAddress()
+                    if (localP2pAddress != null) {
+                        socket.bind(InetSocketAddress(localP2pAddress, 0))
+                    } else {
+                        socket.bind(null)
+                    }
+                    socket.connect(InetSocketAddress(peerAddress, PORT), 3000)
+                    socket.tcpNoDelay = true
+                    socket.soTimeout = 60000
+                    clientSocket = socket
+                    return socket
+                } catch (e: IOException) {
+                    lastException = e
+                    try {
+                        socket.close()
+                    } catch (_: Exception) {}
+                    if (attempt < CONNECT_MAX_ATTEMPTS - 1) {
+                        delay(CONNECT_RETRY_DELAY_MS)
+                    }
+                }
+            }
+            throw lastException ?: IOException("Unable to connect to peer")
+        }
+    }
+
+    private fun findLocalP2pInterfaceAddress(): InetAddress? {
+        return try {
+            val interfaces = java.net.NetworkInterface.getNetworkInterfaces() ?: return null
+            var fallbackP2pSubnet: InetAddress? = null
+            while (interfaces.hasMoreElements()) {
+                val iface = interfaces.nextElement()
+                if (!iface.isUp || iface.isLoopback) continue
+                val isP2pName = iface.name.startsWith("p2p", ignoreCase = true)
+                val addrs = iface.inetAddresses
+                while (addrs.hasMoreElements()) {
+                    val addr = addrs.nextElement()
+                    if (addr is java.net.Inet4Address && !addr.isLoopbackAddress) {
+                        if (isP2pName) {
+                            return addr
+                        }
+                        if (addr.hostAddress?.startsWith("192.168.49.") == true) {
+                            fallbackP2pSubnet = addr
+                        }
+                    }
+                }
+            }
+            fallbackP2pSubnet
+        } catch (_: Exception) {
+            null
+        }
+    }
+
     suspend fun sendFiles(
+        isGroupOwner: Boolean,
         hostAddress: String,
         files: List<FileItem>,
         onProgress: (List<FileItem>, TransferStats) -> Unit,
@@ -87,11 +174,7 @@ class FileTransferEngine(private val context: Context) {
         var currentSpeed = 0L
 
         try {
-            val peerAddress = resolveLocalPeerAddress(hostAddress)
-            val socket = Socket()
-            socket.bind(null)
-            socket.connect(InetSocketAddress(peerAddress, PORT), 15000)
-            clientSocket = socket
+            val socket = openPeerSocket(isGroupOwner = isGroupOwner, groupOwnerAddress = hostAddress)
 
             val outputStream = DataOutputStream(BufferedOutputStream(socket.getOutputStream()))
             val inputStream = DataInputStream(BufferedInputStream(socket.getInputStream()))
@@ -122,7 +205,6 @@ class FileTransferEngine(private val context: Context) {
 
                 val currentFile = mutableFiles[i]
                 if (cancelledFileIds.contains(currentFile.id)) {
-                    // Mark file skipped
                     outputStream.writeByte(CODE_SKIP)
                     outputStream.flush()
                     mutableFiles[i] = currentFile.copy(status = TransferStatus.CANCELLED)
@@ -225,11 +307,17 @@ class FileTransferEngine(private val context: Context) {
             try {
                 clientSocket?.close()
             } catch (_: Exception) {}
+            try {
+                serverSocket?.close()
+            } catch (_: Exception) {}
             clientSocket = null
+            serverSocket = null
         }
     }
 
     suspend fun receiveFiles(
+        isGroupOwner: Boolean,
+        hostAddress: String,
         onProgress: (List<FileItem>, TransferStats) -> Unit,
         onComplete: (Boolean, String?) -> Unit
     ) = withContext(Dispatchers.IO) {
@@ -237,13 +325,7 @@ class FileTransferEngine(private val context: Context) {
         cancelledFileIds.clear()
 
         try {
-            serverSocket = ServerSocket(PORT).apply {
-                reuseAddress = true
-                soTimeout = 120000 // 2 minutes wait for sender
-            }
-
-            val socket = serverSocket!!.accept()
-            clientSocket = socket
+            val socket = openPeerSocket(isGroupOwner = isGroupOwner, groupOwnerAddress = hostAddress)
 
             val inputStream = DataInputStream(BufferedInputStream(socket.getInputStream()))
             val outputStream = DataOutputStream(BufferedOutputStream(socket.getOutputStream()))
@@ -294,12 +376,12 @@ class FileTransferEngine(private val context: Context) {
                 mutableFiles[i] = file.copy(status = TransferStatus.TRANSFERRING)
                 onProgress(mutableFiles.toList(), calculateStats(totalBytes, totalTransferred, currentSpeed))
 
-                val outputStreamForFile = createDestinationOutputStream(file.name, file.mimeType)
+                val destination = createDestination(file.name, file.mimeType)
                 var fileTransferred = 0L
                 var isCancelled = false
 
                 try {
-                    outputStreamForFile.use { fos ->
+                    destination.outputStream.use { fos ->
                         while (true) {
                             val chunkSize = inputStream.readInt()
                             if (chunkSize == CODE_EOF) {
@@ -341,9 +423,11 @@ class FileTransferEngine(private val context: Context) {
                             }
                         }
                     }
+                    finalizeDestination(destination, success = !isCancelled)
                 } catch (e: Exception) {
                     Log.e("FileTransferEngine", "Error receiving file ${file.name}", e)
                     isCancelled = true
+                    finalizeDestination(destination, success = false)
                 }
 
                 mutableFiles[i] = file.copy(
@@ -355,9 +439,6 @@ class FileTransferEngine(private val context: Context) {
 
             try {
                 socket.close()
-            } catch (_: Exception) {}
-            try {
-                serverSocket?.close()
             } catch (_: Exception) {}
             onComplete(true, null)
         } catch (e: CancellationException) {
@@ -382,50 +463,140 @@ class FileTransferEngine(private val context: Context) {
         }
     }
 
-    private fun createDestinationOutputStream(fileName: String, mimeType: String): OutputStream {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val resolver: ContentResolver = context.contentResolver
-            val contentValues = ContentValues().apply {
-                put(MediaStore.Downloads.DISPLAY_NAME, fileName)
-                put(MediaStore.Downloads.MIME_TYPE, mimeType)
-                put(MediaStore.Downloads.IS_PENDING, 0)
-            }
-            val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
-            if (uri != null) {
-                resolver.openOutputStream(uri) ?: FileOutputStream(getFallbackFile(fileName))
-            } else {
-                FileOutputStream(getFallbackFile(fileName))
-            }
+    private data class ReceiveDestination(
+        val outputStream: OutputStream,
+        val mediaUri: Uri? = null,
+        val file: File? = null
+    )
+
+    internal fun resolveSafeMimeType(fileName: String, rawMime: String): String {
+        val trimmed = rawMime.trim()
+        if (trimmed.isNotEmpty() && !trimmed.contains('*') && trimmed.contains('/')) {
+            return trimmed
+        }
+        val ext = fileName.substringAfterLast('.', "").lowercase()
+        val guessed = if (ext.isNotEmpty()) {
+            android.webkit.MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext)
+        } else null
+        return guessed ?: "application/octet-stream"
+    }
+
+    internal fun sanitizeFileName(rawName: String): String {
+        val cleaned = rawName.replace('\\', '/').substringAfterLast('/').trim()
+        return if (cleaned.isEmpty() || cleaned == "." || cleaned == "..") {
+            "file_${System.currentTimeMillis()}"
         } else {
-            FileOutputStream(getFallbackFile(fileName))
+            cleaned
         }
     }
 
-    private fun getFallbackFile(fileName: String): File {
-        val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        if (!downloadsDir.exists()) {
-            downloadsDir.mkdirs()
+    private fun createDestination(fileName: String, mimeType: String): ReceiveDestination {
+        val safeName = sanitizeFileName(fileName)
+        val safeMime = resolveSafeMimeType(safeName, mimeType)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            try {
+                val resolver: ContentResolver = context.contentResolver
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.Downloads.DISPLAY_NAME, safeName)
+                    put(MediaStore.Downloads.MIME_TYPE, safeMime)
+                    put(MediaStore.Downloads.RELATIVE_PATH, "${Environment.DIRECTORY_DOWNLOADS}/Mini Share")
+                    put(MediaStore.Downloads.IS_PENDING, 1)
+                }
+                val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+                if (uri != null) {
+                    val stream = resolver.openOutputStream(uri)
+                    if (stream != null) {
+                        return ReceiveDestination(outputStream = stream, mediaUri = uri)
+                    }
+                    resolver.delete(uri, null, null)
+                }
+            } catch (e: Exception) {
+                Log.e("FileTransferEngine", "MediaStore insert failed", e)
+            }
         }
-        var target = File(downloadsDir, fileName)
+
+        val fallback = getFallbackFile(safeName)
+        return ReceiveDestination(outputStream = FileOutputStream(fallback), file = fallback)
+    }
+
+    private fun finalizeDestination(destination: ReceiveDestination, success: Boolean) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && destination.mediaUri != null) {
+            try {
+                if (success) {
+                    val values = ContentValues().apply {
+                        put(MediaStore.Downloads.IS_PENDING, 0)
+                    }
+                    context.contentResolver.update(destination.mediaUri, values, null, null)
+                } else {
+                    context.contentResolver.delete(destination.mediaUri, null, null)
+                }
+            } catch (_: Exception) {}
+        } else if (destination.file != null) {
+            try {
+                if (success) {
+                    android.media.MediaScannerConnection.scanFile(
+                        context,
+                        arrayOf(destination.file.absolutePath),
+                        null,
+                        null
+                    )
+                } else {
+                    destination.file.delete()
+                }
+            } catch (_: Exception) {}
+        }
+    }
+
+    internal fun getFallbackFile(fileName: String): File {
+        val safeName = sanitizeFileName(fileName)
+        val publicMiniShare = File(
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+            "Mini Share"
+        )
+        val targetDir = try {
+            if (!publicMiniShare.exists()) {
+                publicMiniShare.mkdirs()
+            }
+            if (publicMiniShare.exists() && publicMiniShare.canWrite()) {
+                publicMiniShare
+            } else {
+                File(
+                    context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: context.filesDir,
+                    "Mini Share"
+                ).apply { mkdirs() }
+            }
+        } catch (_: Exception) {
+            File(
+                context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: context.filesDir,
+                "Mini Share"
+            ).apply { mkdirs() }
+        }
+
+        var target = File(targetDir, safeName)
         var count = 1
-        val baseName = fileName.substringBeforeLast(".")
-        val extension = fileName.substringAfterLast(".", "")
+        val baseName = safeName.substringBeforeLast(".")
+        val extension = safeName.substringAfterLast(".", "")
         while (target.exists()) {
-            val newName = if (extension.isNotEmpty()) "$baseName($count).$extension" else "$baseName($count)"
-            target = File(downloadsDir, newName)
+            val newName = if (extension.isNotEmpty() && safeName.contains('.')) {
+                "$baseName($count).$extension"
+            } else {
+                "$baseName($count)"
+            }
+            target = File(targetDir, newName)
             count++
         }
         return target
     }
 
     private fun calculateStats(totalBytes: Long, transferredBytes: Long, speed: Long): TransferStats {
-        val safeTransferred = transferredBytes.coerceAtMost(totalBytes)
-        val progress = if (totalBytes > 0) (safeTransferred.toFloat() / totalBytes).coerceIn(0f, 1f) else 0f
-        val remainingBytes = (totalBytes - safeTransferred).coerceAtLeast(0)
+        val effectiveTotal = totalBytes.coerceAtLeast(transferredBytes)
+        val safeTransferred = transferredBytes.coerceAtMost(effectiveTotal)
+        val progress = if (effectiveTotal > 0) (safeTransferred.toFloat() / effectiveTotal).coerceIn(0f, 1f) else 0f
+        val remainingBytes = (effectiveTotal - safeTransferred).coerceAtLeast(0)
         val remainingSeconds = if (speed > 0) remainingBytes / speed else 0L
 
         return TransferStats(
-            totalBytes = totalBytes,
+            totalBytes = effectiveTotal,
             transferredBytes = safeTransferred,
             speedBytesPerSec = speed,
             remainingSeconds = remainingSeconds,

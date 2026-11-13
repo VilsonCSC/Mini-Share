@@ -2,6 +2,8 @@ package com.example
 
 import android.Manifest
 import android.app.Activity
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -129,6 +131,7 @@ class MainActivity : ComponentActivity() {
 
 private enum class RequiredSetting {
     WIFI,
+    BLUETOOTH,
     LOCATION
 }
 
@@ -137,6 +140,12 @@ private fun getMissingRequiredSetting(context: Context): RequiredSetting? {
     val isWifiOn = wifiManager?.isWifiEnabled ?: true
     if (!isWifiOn) {
         return RequiredSetting.WIFI
+    }
+
+    val btManager = context.applicationContext.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
+    val btAdapter = btManager?.adapter
+    if (btAdapter != null && !btAdapter.isEnabled) {
+        return RequiredSetting.BLUETOOTH
     }
 
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
@@ -162,6 +171,14 @@ private fun createSettingIntent(context: Context, setting: RequiredSetting): Int
                 }
             } else {
                 Intent(Settings.ACTION_WIFI_SETTINGS)
+            }
+        }
+        RequiredSetting.BLUETOOTH -> {
+            val enableIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+            if (enableIntent.resolveActivity(context.packageManager) != null) {
+                enableIntent
+            } else {
+                Intent(Settings.ACTION_BLUETOOTH_SETTINGS)
             }
         }
         RequiredSetting.LOCATION -> Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
@@ -197,13 +214,33 @@ private fun extractSharedUris(intent: Intent?): List<Uri> {
     return result.toList()
 }
 
-private fun getRequiredPermissions(): Array<String> {
-    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        arrayOf(Manifest.permission.NEARBY_WIFI_DEVICES)
-    } else {
-        arrayOf(
+internal fun getRequiredPermissions(): Array<String> {
+    return when {
+        // Android 13 - 17 (API 33+): Wi-Fi Nearby + Bluetooth Nearby runtime permissions
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> arrayOf(
+            Manifest.permission.NEARBY_WIFI_DEVICES,
+            Manifest.permission.BLUETOOTH_SCAN,
+            Manifest.permission.BLUETOOTH_ADVERTISE,
+            Manifest.permission.BLUETOOTH_CONNECT
+        )
+        // Android 12 / 12L (API 31-32): Bluetooth Nearby + Location for Wi-Fi P2P
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> arrayOf(
+            Manifest.permission.BLUETOOTH_SCAN,
+            Manifest.permission.BLUETOOTH_ADVERTISE,
+            Manifest.permission.BLUETOOTH_CONNECT,
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.ACCESS_COARSE_LOCATION
+        )
+        // Android 10 & 11 (API 29-30): Location runtime permission (BLUETOOTH is install-time, Scoped Storage for Downloads)
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> arrayOf(
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        )
+        // Android 9 (API 28): Location + WRITE_EXTERNAL_STORAGE for Downloads
+        else -> arrayOf(
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
         )
     }
 }
@@ -238,6 +275,7 @@ fun MainAppContent(
     val thisDevice by viewModel.thisDevice.collectAsStateWithLifecycle()
     val userName by viewModel.userName.collectAsStateWithLifecycle()
     val currentScreen by viewModel.currentScreen.collectAsStateWithLifecycle()
+    val connectingDeviceAddress by viewModel.connectingDeviceAddress.collectAsStateWithLifecycle()
 
     var pendingAction by remember { mutableStateOf<(() -> Unit)?>(null) }
     var awaitingExternalModal by remember { mutableStateOf(false) }
@@ -380,14 +418,22 @@ fun MainAppContent(
             },
             title = {
                 Text(
-                    text = if (setting == RequiredSetting.WIFI) "TURN ON WI-FI" else "TURN ON LOCATION",
+                    text = when (setting) {
+                        RequiredSetting.WIFI -> "TURN ON WI-FI"
+                        RequiredSetting.BLUETOOTH -> "TURN ON BLUETOOTH"
+                        RequiredSetting.LOCATION -> "TURN ON LOCATION"
+                    },
                     color = colors.onSurface,
                     fontWeight = FontWeight.Bold
                 )
             },
             text = {
                 Text(
-                    text = if (setting == RequiredSetting.WIFI) "Wi-Fi is off." else "Location is off.",
+                    text = when (setting) {
+                        RequiredSetting.WIFI -> "Wi-Fi is off."
+                        RequiredSetting.BLUETOOTH -> "Bluetooth is off."
+                        RequiredSetting.LOCATION -> "Location is off."
+                    },
                     color = colors.onSurfaceVariant
                 )
             },
@@ -456,6 +502,7 @@ fun MainAppContent(
                         peers = peers,
                         selectedFiles = selectedFiles,
                         isScanning = isScanning,
+                        connectingDeviceAddress = connectingDeviceAddress,
                         onBackClick = { viewModel.resetToHome() },
                         onRescanClick = { viewModel.startRadarScan() },
                         onDeviceClick = { device -> viewModel.connectAndSend(device) }
@@ -475,7 +522,7 @@ fun MainAppContent(
 
                 AppScreen.TRANSFER -> {
                     BackHandler {
-                        if (isTransferComplete) {
+                        if (isTransferComplete || !isTransferActive) {
                             viewModel.resetToHome()
                         } else {
                             viewModel.cancelAllTransfers()

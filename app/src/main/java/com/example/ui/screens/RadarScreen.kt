@@ -45,6 +45,7 @@ fun RadarScreen(
     peers: List<WifiP2pDevice>,
     selectedFiles: List<FileItem>,
     isScanning: Boolean,
+    connectingDeviceAddress: String? = null,
     onBackClick: () -> Unit,
     onRescanClick: () -> Unit,
     onDeviceClick: (WifiP2pDevice) -> Unit
@@ -160,6 +161,7 @@ fun RadarScreen(
                 itemsIndexed(peers) { index, device ->
                     DeviceItemCard(
                         device = device,
+                        isConnecting = connectingDeviceAddress == device.deviceAddress,
                         testTag = "connect_device_button_$index",
                         onConnectClick = { onDeviceClick(device) }
                     )
@@ -172,6 +174,7 @@ fun RadarScreen(
 @Composable
 private fun DeviceItemCard(
     device: WifiP2pDevice,
+    isConnecting: Boolean,
     testTag: String,
     onConnectClick: () -> Unit
 ) {
@@ -183,7 +186,7 @@ private fun DeviceItemCard(
             .clip(RoundedCornerShape(16.dp))
             .background(colors.surfaceVariant)
             .border(1.dp, colors.outline, RoundedCornerShape(16.dp))
-            .clickable { onConnectClick() }
+            .clickable(enabled = !isConnecting) { onConnectClick() }
             .padding(16.dp)
             .testTag(testTag),
         verticalAlignment = Alignment.CenterVertically,
@@ -234,13 +237,13 @@ private fun DeviceItemCard(
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(10.dp))
-                .background(colors.primary)
-                .clickable { onConnectClick() }
+                .background(if (isConnecting) colors.outline else colors.primary)
+                .clickable(enabled = !isConnecting) { onConnectClick() }
                 .padding(horizontal = 14.dp, vertical = 10.dp)
         ) {
             Text(
-                text = "CONNECT",
-                color = colors.onPrimary,
+                text = if (isConnecting) "CONNECTING" else "CONNECT",
+                color = if (isConnecting) colors.onSurface else colors.onPrimary,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.ExtraBold
             )
