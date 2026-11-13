@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="640" viewBox="0 0 360 640">
+  <rect width="360" height="640" fill="#eef1f4"/>
+
+  <g transform="translate(25,25)">
+    <circle cx="30" cy="30" r="28" fill="#f3f6f9" stroke="#d2dae3" stroke-width="2"/>
+    <path d="M19 30 L30 18 M30 18 L41 30 M30 18 L30 42" stroke="#1d2430" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
+
+  <text x="110" y="72" font-size="42" font-weight="800" font-family="Arial, sans-serif" fill="#1d2430">SEARCHING</text>
+
+  <g transform="translate(25,110)">
+    <rect width="230" height="42" rx="18" fill="#edf3f8" stroke="#c8d9e7" stroke-width="2"/>
+    <text x="18" y="28" font-size="20" font-weight="700" font-family="Arial, sans-serif" fill="#1c9ad6">1 FILES • 142.1 KB</text>
+  </g>
+
+  <g transform="translate(286,112)">
+    <circle cx="25" cy="25" r="24" fill="#f3f6f9" stroke="#d0dbe5" stroke-width="2"/>
+    <path d="M13 29 A 18 18 0 1 1 37 29" fill="none" stroke="#1c9ad6" stroke-width="3" stroke-linecap="round"/>
+    <path d="M32 18 L37 29 L26 29" fill="none" stroke="#1c9ad6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <g transform="translate(58,220)">
+    <circle cx="122" cy="120" r="120" fill="none" stroke="#cfeaf7" stroke-width="2"/>
+    <circle cx="122" cy="120" r="96" fill="none" stroke="#cfeaf7" stroke-width="2"/>
+    <circle cx="122" cy="120" r="72" fill="none" stroke="#cfeaf7" stroke-width="2"/>
+    <circle cx="122" cy="120" r="48" fill="none" stroke="#cfeaf7" stroke-width="2"/>
+    <circle cx="122" cy="120" r="24" fill="none" stroke="#cfeaf7" stroke-width="2"/>
+
+    <line x1="122" y1="120" x2="122" y2="0" stroke="#1c9ad6" stroke-width="4" stroke-linecap="round"/>
+    <line x1="122" y1="120" x2="242" y2="120" stroke="#cfeaf7" stroke-width="2"/>
+    <line x1="122" y1="120" x2="122" y2="240" stroke="#cfeaf7" stroke-width="2"/>
+    <line x1="122" y1="120" x2="2" y2="120" stroke="#cfeaf7" stroke-width="2"/>
+    <line x1="122" y1="120" x2="122" y2="120" stroke="none"/>
+
+    <circle cx="122" cy="120" r="7" fill="#1c9ad6"/>
+    <path d="M122 120 L122 10" stroke="#1c9ad6" stroke-width="4" stroke-linecap="round"/>
+  </g>
+
+  <text x="180" y="455" text-anchor="middle" font-size="26" font-weight="700" font-family="Arial, sans-serif" fill="#1d2430">SEARCHING FOR DEVICES (0)</text>
+  <text x="180" y="530" text-anchor="middle" font-size="50" font-weight="700" font-family="Arial, sans-serif" fill="#1d2430">SEARCHING...</text>
+</svg>

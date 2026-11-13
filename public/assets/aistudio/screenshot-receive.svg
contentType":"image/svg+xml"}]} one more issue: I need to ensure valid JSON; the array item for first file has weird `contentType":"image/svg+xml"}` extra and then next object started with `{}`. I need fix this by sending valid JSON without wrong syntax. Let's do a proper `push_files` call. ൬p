@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="640" viewBox="0 0 360 640">
+  <rect width="360" height="640" fill="#eef1f4"/>
+
+  <g transform="translate(25,25)">
+    <circle cx="30" cy="30" r="28" fill="#f3f6f9" stroke="#d2dae3" stroke-width="2"/>
+    <path d="M19 30 L30 18 M30 18 L41 30 M30 18 L30 42" stroke="#1d2430" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
+
+  <text x="180" y="72" text-anchor="middle" font-size="42" font-weight="800" font-family="Arial, sans-serif" fill="#1d2430">RECEIVE</text>
+
+  <g transform="translate(25,120)">
+    <rect width="310" height="92" rx="18" fill="#f0e9fb" stroke="#d2bfdc" stroke-width="2"/>
+    <g transform="translate(22,18)">
+      <circle cx="28" cy="28" r="28" fill="#c7b1ef" stroke="#9d7fe8" stroke-width="2"/>
+      <path d="M28 13 L28 46" stroke="#5e47d8" stroke-width="7" stroke-linecap="round"/>
+      <path d="M16 35 L28 47 L40 35" fill="none" stroke="#5e47d8" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <text x="112" y="34" font-size="20" font-weight="700" font-family="Arial, sans-serif" fill="#5d5d6b">VISIBLE AS</text>
+    <text x="112" y="60" font-size="34" font-weight="800" font-family="Arial, sans-serif" fill="#1d2430">Vilson Sonkar</text>
+  </g>
+
+  <g transform="translate(58,260)">
+    <circle cx="122" cy="120" r="120" fill="none" stroke="#d9c9ef" stroke-width="2"/>
+    <circle cx="122" cy="120" r="96" fill="none" stroke="#d9c9ef" stroke-width="2"/>
+    <circle cx="122" cy="120" r="72" fill="none" stroke="#d9c9ef" stroke-width="2"/>
+    <circle cx="122" cy="120" r="48" fill="none" stroke="#d9c9ef" stroke-width="2"/>
+    <circle cx="122" cy="120" r="24" fill="none" stroke="#d9c9ef" stroke-width="2"/>
+
+    <line x1="122" y1="120" x2="122" y2="0" stroke="#d9c9ef" stroke-width="2"/>
+    <line x1="122" y1="120" x2="242" y2="120" stroke="#d9c9ef" stroke-width="2"/>
+    <line x1="122" y1="120" x2="122" y2="240" stroke="#d9c9ef" stroke-width="2"/>
+    <line x1="122" y1="120" x2="2" y2="120" stroke="#d9c9ef" stroke-width="2"/>
+
+    <circle cx="122" cy="120" r="8" fill="#6d4fe8"/>
+    <path d="M122 120 L122 15" stroke="#6d4fe8" stroke-width="4" stroke-linecap="round"/>
+  </g>
+
+  <g transform="translate(40,500)">
+    <rect width="280" height="64" rx="26" fill="#d9c9ef" stroke="#bca3de" stroke-width="2"/>
+    <text x="140" y="42" text-anchor="middle" font-size="32" font-weight="800" font-family="Arial, sans-serif" fill="#5e47d8">READY TO RECEIVE</text>
+  </g>
+</svg>
