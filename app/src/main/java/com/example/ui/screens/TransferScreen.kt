@@ -1,7 +1,7 @@
 package com.example.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -21,7 +21,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
-import com.example.ui.components.AppIcons
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -33,7 +32,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.testTag
@@ -46,19 +44,10 @@ import com.example.model.FileItem
 import com.example.model.TransferDirection
 import com.example.model.TransferStats
 import com.example.model.TransferStatus
+import com.example.ui.components.AppIcons
 import com.example.ui.components.AppTopBar
 import com.example.ui.components.KeepScreenOnEffect
 import com.example.ui.components.getFileIcon
-import com.example.ui.theme.ElectricBlue
-import com.example.ui.theme.ElectricViolet
-import com.example.ui.theme.EmeraldGreen
-import com.example.ui.theme.NeonCyan
-import com.example.ui.theme.RoseRed
-import com.example.ui.theme.SurfaceCard
-import com.example.ui.theme.SurfaceCardBorder
-import com.example.ui.theme.TextMuted
-import com.example.ui.theme.TextPrimary
-import com.example.ui.theme.TextSecondary
 
 @Composable
 fun TransferScreen(
@@ -74,7 +63,8 @@ fun TransferScreen(
     // Keep screen on during file transfer as requested
     KeepScreenOnEffect()
 
-    val primaryAccent = if (direction == TransferDirection.SEND) NeonCyan else ElectricViolet
+    val colors = MaterialTheme.colorScheme
+    val primaryAccent = if (direction == TransferDirection.SEND) colors.primary else colors.secondary
     val animatedProgress by animateFloatAsState(
         targetValue = stats.overallProgress,
         label = "OverallProgress"
@@ -83,7 +73,7 @@ fun TransferScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(colors.background)
             .testTag("transfer_screen")
     ) {
         AppTopBar(
@@ -97,8 +87,8 @@ fun TransferScreen(
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp, vertical = 10.dp)
                 .clip(RoundedCornerShape(22.dp))
-                .background(SurfaceCard)
-                .border(1.dp, SurfaceCardBorder, RoundedCornerShape(22.dp))
+                .background(colors.surfaceVariant)
+                .border(1.dp, colors.outline, RoundedCornerShape(22.dp))
                 .padding(20.dp)
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
@@ -126,7 +116,7 @@ fun TransferScreen(
 
                     Text(
                         text = "${(stats.overallProgress * 100).toInt()}%",
-                        color = TextPrimary,
+                        color = colors.onSurface,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -143,7 +133,7 @@ fun TransferScreen(
                         .clip(RoundedCornerShape(4.dp))
                         .testTag("overall_progress_bar"),
                     color = primaryAccent,
-                    trackColor = SurfaceCardBorder,
+                    trackColor = colors.outline,
                     strokeCap = StrokeCap.Round
                 )
 
@@ -189,7 +179,7 @@ fun TransferScreen(
         ) {
             Text(
                 text = "FILES (${files.size})",
-                color = TextSecondary,
+                color = colors.onSurfaceVariant,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -227,8 +217,8 @@ fun TransferScreen(
                         .height(52.dp)
                         .testTag("done_button"),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = EmeraldGreen,
-                        contentColor = Color.White
+                        containerColor = colors.tertiary,
+                        contentColor = colors.onTertiary
                     ),
                     shape = RoundedCornerShape(14.dp)
                 ) {
@@ -247,17 +237,17 @@ fun TransferScreen(
                         .height(52.dp)
                         .testTag("cancel_all_button"),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = SurfaceCard,
-                        contentColor = RoseRed
+                        containerColor = colors.surfaceVariant,
+                        contentColor = colors.error
                     ),
                     shape = RoundedCornerShape(14.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, RoseRed.copy(alpha = 0.5f))
+                    border = BorderStroke(1.dp, colors.error.copy(alpha = 0.5f))
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = AppIcons.Close,
                             contentDescription = null,
-                            tint = RoseRed,
+                            tint = colors.error,
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
@@ -280,13 +270,15 @@ private fun StatColumn(
     value: String,
     modifier: Modifier = Modifier
 ) {
+    val colors = MaterialTheme.colorScheme
+
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             text = value,
-            color = TextPrimary,
+            color = colors.onSurface,
             fontSize = 13.sp,
             fontWeight = FontWeight.Bold,
             maxLines = 1,
@@ -296,7 +288,7 @@ private fun StatColumn(
         Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = label,
-            color = TextMuted,
+            color = colors.outlineVariant,
             fontSize = 11.sp,
             fontWeight = FontWeight.SemiBold,
             textAlign = TextAlign.Center
@@ -310,14 +302,15 @@ private fun TransferFileItem(
     primaryColor: Color,
     onCancelClick: () -> Unit
 ) {
+    val colors = MaterialTheme.colorScheme
     val fileIcon = getFileIcon(file.mimeType, file.name)
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(SurfaceCard)
-            .border(1.dp, SurfaceCardBorder, RoundedCornerShape(16.dp))
+            .background(colors.surfaceVariant)
+            .border(1.dp, colors.outline, RoundedCornerShape(16.dp))
             .padding(14.dp)
             .testTag("file_item_${file.id}"),
         verticalAlignment = Alignment.CenterVertically,
@@ -330,18 +323,18 @@ private fun TransferFileItem(
                 .clip(CircleShape)
                 .background(
                     when (file.status) {
-                        TransferStatus.COMPLETED -> EmeraldGreen.copy(alpha = 0.15f)
-                        TransferStatus.CANCELLED -> RoseRed.copy(alpha = 0.15f)
-                        TransferStatus.FAILED -> RoseRed.copy(alpha = 0.15f)
+                        TransferStatus.COMPLETED -> colors.tertiary.copy(alpha = 0.15f)
+                        TransferStatus.CANCELLED -> colors.error.copy(alpha = 0.15f)
+                        TransferStatus.FAILED -> colors.error.copy(alpha = 0.15f)
                         else -> primaryColor.copy(alpha = 0.15f)
                     }
                 )
                 .border(
                     1.dp,
                     when (file.status) {
-                        TransferStatus.COMPLETED -> EmeraldGreen.copy(alpha = 0.4f)
-                        TransferStatus.CANCELLED -> RoseRed.copy(alpha = 0.4f)
-                        TransferStatus.FAILED -> RoseRed.copy(alpha = 0.4f)
+                        TransferStatus.COMPLETED -> colors.tertiary.copy(alpha = 0.4f)
+                        TransferStatus.CANCELLED -> colors.error.copy(alpha = 0.4f)
+                        TransferStatus.FAILED -> colors.error.copy(alpha = 0.4f)
                         else -> primaryColor.copy(alpha = 0.4f)
                     },
                     CircleShape
@@ -356,9 +349,9 @@ private fun TransferFileItem(
                 },
                 contentDescription = null,
                 tint = when (file.status) {
-                    TransferStatus.COMPLETED -> EmeraldGreen
-                    TransferStatus.CANCELLED -> RoseRed
-                    TransferStatus.FAILED -> RoseRed
+                    TransferStatus.COMPLETED -> colors.tertiary
+                    TransferStatus.CANCELLED -> colors.error
+                    TransferStatus.FAILED -> colors.error
                     else -> primaryColor
                 },
                 modifier = Modifier.size(20.dp)
@@ -371,7 +364,7 @@ private fun TransferFileItem(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = file.name,
-                color = TextPrimary,
+                color = colors.onSurface,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
@@ -394,11 +387,11 @@ private fun TransferFileItem(
                         TransferStatus.PENDING -> "${file.formattedSize} • PENDING"
                     },
                     color = when (file.status) {
-                        TransferStatus.COMPLETED -> EmeraldGreen
-                        TransferStatus.CANCELLED -> RoseRed
-                        TransferStatus.FAILED -> RoseRed
+                        TransferStatus.COMPLETED -> colors.tertiary
+                        TransferStatus.CANCELLED -> colors.error
+                        TransferStatus.FAILED -> colors.error
                         TransferStatus.TRANSFERRING -> primaryColor
-                        TransferStatus.PENDING -> TextMuted
+                        TransferStatus.PENDING -> colors.outlineVariant
                     },
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Medium
@@ -421,15 +414,15 @@ private fun TransferFileItem(
             IconButton(
                 onClick = onCancelClick,
                 modifier = Modifier
-                    .size(36.dp)
+                    .size(48.dp)
                     .clip(CircleShape)
-                    .background(SurfaceCardBorder.copy(alpha = 0.4f))
+                    .background(colors.outline.copy(alpha = 0.4f))
                     .testTag("cancel_file_button_${file.id}")
             ) {
                 Icon(
                     imageVector = AppIcons.Close,
                     contentDescription = "Cancel File",
-                    tint = RoseRed,
+                    tint = colors.error,
                     modifier = Modifier.size(18.dp)
                 )
             }

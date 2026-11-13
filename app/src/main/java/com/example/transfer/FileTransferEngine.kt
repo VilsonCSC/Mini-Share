@@ -23,6 +23,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
 import java.io.OutputStream
+import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.net.Socket
@@ -86,9 +87,10 @@ class FileTransferEngine(private val context: Context) {
         var currentSpeed = 0L
 
         try {
+            val peerAddress = resolveLocalPeerAddress(hostAddress)
             val socket = Socket()
             socket.bind(null)
-            socket.connect(InetSocketAddress(hostAddress, PORT), 15000)
+            socket.connect(InetSocketAddress(peerAddress, PORT), 15000)
             clientSocket = socket
 
             val outputStream = DataOutputStream(BufferedOutputStream(socket.getOutputStream()))
@@ -429,5 +431,21 @@ class FileTransferEngine(private val context: Context) {
             remainingSeconds = remainingSeconds,
             overallProgress = progress
         )
+    }
+
+    private fun resolveLocalPeerAddress(hostAddress: String): InetAddress {
+        val parts = hostAddress.trim().split('.')
+        require(parts.size == 4) { "Invalid local peer address" }
+        val bytes = ByteArray(4) { index ->
+            val segment = parts[index].toIntOrNull()
+                ?: throw IllegalArgumentException("Invalid local peer address")
+            require(segment in 0..255) { "Invalid local peer address" }
+            segment.toByte()
+        }
+        val address = InetAddress.getByAddress(bytes)
+        require(address.isSiteLocalAddress || address.isLinkLocalAddress || address.isLoopbackAddress) {
+            "Only local Wi-Fi Direct peer addresses are allowed"
+        }
+        return address
     }
 }

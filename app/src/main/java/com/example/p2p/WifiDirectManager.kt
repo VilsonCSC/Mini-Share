@@ -51,7 +51,14 @@ class WifiDirectManager(private val context: Context) {
         registerReceiver()
     }
 
+    fun ensureRegistered() {
+        if (receiver == null) {
+            registerReceiver()
+        }
+    }
+
     private fun registerReceiver() {
+        if (receiver != null) return
         val intentFilter = IntentFilter().apply {
             addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION)
             addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION)

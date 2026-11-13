@@ -14,18 +14,13 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -35,7 +30,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -47,15 +41,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.ui.theme.ElectricBlue
-import com.example.ui.theme.ElectricViolet
-import com.example.ui.theme.EmeraldGreen
-import com.example.ui.theme.NeonCyan
-import com.example.ui.theme.RoseRed
-import com.example.ui.theme.SurfaceCard
-import com.example.ui.theme.SurfaceCardBorder
-import com.example.ui.theme.TextPrimary
-import com.example.ui.theme.TextSecondary
 import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
@@ -93,17 +78,17 @@ fun AppTopBar(
                 if (onBackClick != null) {
                     Box(
                         modifier = Modifier
-                            .size(40.dp)
+                            .size(48.dp)
                             .clip(CircleShape)
-                            .background(SurfaceCard)
-                            .border(1.dp, SurfaceCardBorder, CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
                             .clickable { onBackClick() }
                             .testTag("top_bar_back_button"),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = "‹",
-                            color = TextPrimary,
+                            color = MaterialTheme.colorScheme.onSurface,
                             fontSize = 24.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -114,7 +99,7 @@ fun AppTopBar(
                     Text(
                         text = title,
                         style = MaterialTheme.typography.titleLarge,
-                        color = TextPrimary,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -130,7 +115,7 @@ fun AppTopBar(
 @Composable
 fun RadarAnimation(
     modifier: Modifier = Modifier,
-    radarColor: Color = NeonCyan
+    radarColor: Color = MaterialTheme.colorScheme.primary
 ) {
     val transition = rememberInfiniteTransition(label = "RadarTransition")
     val sweepAngle by transition.animateFloat(
@@ -162,7 +147,7 @@ fun RadarAnimation(
         for (i in 1..rings) {
             val r = maxRadius * (i.toFloat() / rings)
             drawCircle(
-                color = radarColor.copy(alpha = 0.12f),
+                color = radarColor.copy(alpha = 0.16f),
                 radius = r,
                 center = center,
                 style = Stroke(width = 1.5.dp.toPx())
@@ -171,13 +156,13 @@ fun RadarAnimation(
 
         // Crosshairs
         drawLine(
-            color = radarColor.copy(alpha = 0.15f),
+            color = radarColor.copy(alpha = 0.18f),
             start = Offset(center.x, center.y - maxRadius),
             end = Offset(center.x, center.y + maxRadius),
             strokeWidth = 1.dp.toPx()
         )
         drawLine(
-            color = radarColor.copy(alpha = 0.15f),
+            color = radarColor.copy(alpha = 0.18f),
             start = Offset(center.x - maxRadius, center.y),
             end = Offset(center.x + maxRadius, center.y),
             strokeWidth = 1.dp.toPx()
@@ -185,7 +170,7 @@ fun RadarAnimation(
 
         // Pulsing wave
         drawCircle(
-            color = radarColor.copy(alpha = (1f - pulseScale) * 0.25f),
+            color = radarColor.copy(alpha = (1f - pulseScale) * 0.30f),
             radius = maxRadius * pulseScale,
             center = center,
             style = Stroke(width = 2.dp.toPx())

@@ -15,10 +15,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
-import com.example.ui.components.AppIcons
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -42,13 +42,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ui.components.AppIcons
+import com.example.ui.theme.DeepViolet
 import com.example.ui.theme.ElectricBlue
-import com.example.ui.theme.ElectricViolet
-import com.example.ui.theme.NeonCyan
-import com.example.ui.theme.SurfaceCard
-import com.example.ui.theme.SurfaceCardBorder
-import com.example.ui.theme.TextPrimary
-import com.example.ui.theme.TextSecondary
 
 @Composable
 fun HomeScreen(
@@ -60,10 +56,12 @@ fun HomeScreen(
     var isEditingName by remember { mutableStateOf(false) }
     var tempName by remember(userName) { mutableStateOf(userName) }
 
+    val colors = MaterialTheme.colorScheme
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(colors.background)
     ) {
         // Top bar with editable user name on top left
         Row(
@@ -76,26 +74,26 @@ fun HomeScreen(
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(20.dp))
-                    .background(SurfaceCard)
-                    .border(1.dp, SurfaceCardBorder, RoundedCornerShape(20.dp))
+                    .background(colors.surfaceVariant)
+                    .border(1.dp, colors.outline, RoundedCornerShape(20.dp))
                     .clickable {
                         tempName = userName
                         isEditingName = true
                     }
-                    .padding(horizontal = 14.dp, vertical = 8.dp)
+                    .padding(horizontal = 14.dp, vertical = 10.dp)
                     .testTag("user_name_chip")
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = AppIcons.Person,
                         contentDescription = null,
-                        tint = NeonCyan,
+                        tint = colors.primary,
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = userName,
-                        color = TextPrimary,
+                        color = colors.onSurface,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -103,7 +101,7 @@ fun HomeScreen(
                     Icon(
                         imageVector = AppIcons.Edit,
                         contentDescription = "Edit Name",
-                        tint = TextSecondary,
+                        tint = colors.onSurfaceVariant,
                         modifier = Modifier.size(14.dp)
                     )
                 }
@@ -116,7 +114,7 @@ fun HomeScreen(
                 title = {
                     Text(
                         text = "EDIT NAME",
-                        color = TextPrimary,
+                        color = colors.onSurface,
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp
                     )
@@ -127,11 +125,11 @@ fun HomeScreen(
                         onValueChange = { tempName = it },
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = TextPrimary,
-                            unfocusedTextColor = TextPrimary,
-                            focusedBorderColor = NeonCyan,
-                            unfocusedBorderColor = SurfaceCardBorder,
-                            cursorColor = NeonCyan
+                            focusedTextColor = colors.onSurface,
+                            unfocusedTextColor = colors.onSurface,
+                            focusedBorderColor = colors.primary,
+                            unfocusedBorderColor = colors.outline,
+                            cursorColor = colors.primary
                         ),
                         modifier = Modifier.testTag("edit_name_input")
                     )
@@ -144,15 +142,15 @@ fun HomeScreen(
                         },
                         modifier = Modifier.testTag("save_name_button")
                     ) {
-                        Text("SAVE", color = NeonCyan, fontWeight = FontWeight.Bold)
+                        Text("SAVE", color = colors.primary, fontWeight = FontWeight.Bold)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { isEditingName = false }) {
-                        Text("CANCEL", color = TextSecondary)
+                        Text("CANCEL", color = colors.onSurfaceVariant)
                     }
                 },
-                containerColor = SurfaceCard
+                containerColor = colors.surfaceVariant
             )
         }
 
@@ -163,27 +161,38 @@ fun HomeScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Big Share / Send Card
-            BigActionCard(
-                title = "SEND",
-                icon = AppIcons.Send,
-                primaryColor = NeonCyan,
-                secondaryColor = ElectricBlue,
-                testTag = "send_button",
-                onClick = onSendClick
-            )
+            Column(
+                modifier = Modifier.widthIn(max = 520.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Big Share / Send Card
+                BigActionCard(
+                    title = "SEND",
+                    icon = AppIcons.Send,
+                    primaryColor = colors.primary,
+                    secondaryColor = ElectricBlue,
+                    surfaceColor = colors.surfaceVariant,
+                    borderColor = colors.outline,
+                    titleColor = colors.onSurface,
+                    testTag = "send_button",
+                    onClick = onSendClick
+                )
 
-            Spacer(modifier = Modifier.height(28.dp))
+                Spacer(modifier = Modifier.height(28.dp))
 
-            // Big Receive Card
-            BigActionCard(
-                title = "RECEIVE",
-                icon = AppIcons.FileDownload,
-                primaryColor = ElectricViolet,
-                secondaryColor = Color(0xFF6D28D9),
-                testTag = "receive_button",
-                onClick = onReceiveClick
-            )
+                // Big Receive Card
+                BigActionCard(
+                    title = "RECEIVE",
+                    icon = AppIcons.FileDownload,
+                    primaryColor = colors.secondary,
+                    secondaryColor = DeepViolet,
+                    surfaceColor = colors.surfaceVariant,
+                    borderColor = colors.outline,
+                    titleColor = colors.onSurface,
+                    testTag = "receive_button",
+                    onClick = onReceiveClick
+                )
+            }
         }
     }
 }
@@ -194,6 +203,9 @@ private fun BigActionCard(
     icon: ImageVector,
     primaryColor: Color,
     secondaryColor: Color,
+    surfaceColor: Color,
+    borderColor: Color,
+    titleColor: Color,
     testTag: String,
     onClick: () -> Unit
 ) {
@@ -203,14 +215,19 @@ private fun BigActionCard(
         modifier = Modifier
             .fillMaxWidth()
             .height(200.dp)
-            .shadow(16.dp, RoundedCornerShape(28.dp), ambientColor = primaryColor.copy(alpha = 0.2f), spotColor = primaryColor.copy(alpha = 0.4f))
+            .shadow(
+                elevation = 12.dp,
+                shape = RoundedCornerShape(28.dp),
+                ambientColor = primaryColor.copy(alpha = 0.2f),
+                spotColor = primaryColor.copy(alpha = 0.35f)
+            )
             .clip(RoundedCornerShape(28.dp))
             .background(
                 Brush.linearGradient(
                     colors = listOf(
-                        primaryColor.copy(alpha = 0.16f),
-                        secondaryColor.copy(alpha = 0.08f),
-                        SurfaceCard
+                        primaryColor.copy(alpha = 0.14f),
+                        secondaryColor.copy(alpha = 0.06f),
+                        surfaceColor
                     )
                 )
             )
@@ -218,9 +235,9 @@ private fun BigActionCard(
                 1.5.dp,
                 Brush.linearGradient(
                     listOf(
-                        primaryColor.copy(alpha = 0.6f),
+                        primaryColor.copy(alpha = 0.55f),
                         secondaryColor.copy(alpha = 0.2f),
-                        SurfaceCardBorder
+                        borderColor
                     )
                 ),
                 RoundedCornerShape(28.dp)
@@ -245,8 +262,8 @@ private fun BigActionCard(
                     .background(
                         Brush.radialGradient(
                             colors = listOf(
-                                primaryColor.copy(alpha = 0.35f),
-                                secondaryColor.copy(alpha = 0.15f)
+                                primaryColor.copy(alpha = 0.28f),
+                                secondaryColor.copy(alpha = 0.12f)
                             )
                         )
                     )
@@ -274,7 +291,7 @@ private fun BigActionCard(
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.ExtraBold,
                 letterSpacing = 2.sp,
-                color = TextPrimary
+                color = titleColor
             )
         }
     }

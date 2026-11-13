@@ -67,6 +67,11 @@ android {
       signingConfig = signingConfigs.getByName("release")
     }
     debug {
+      isDebuggable = false
+      isCrunchPngs = true
+      isMinifyEnabled = true
+      isShrinkResources = true
+      proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
       // Do not remove or modify this signingConfig assignment. It is necessary for Android apps in
       // AI Studio.
       signingConfig = signingConfigs.getByName("debugConfig")
@@ -84,11 +89,17 @@ android {
     dex {
       useLegacyPackaging = true
     }
+    jniLibs {
+      useLegacyPackaging = true
+    }
     resources {
       excludes += listOf(
         "/META-INF/{AL2.0,LGPL2.1}",
         "META-INF/LICENSE*",
         "META-INF/NOTICE*",
+        "META-INF/*.kotlin_module",
+        "**/*.kotlin_builtins",
+        "**/*.kotlin_metadata",
         "DebugProbesKt.bin"
       )
     }
@@ -128,5 +139,4 @@ dependencies {
   androidTestImplementation(libs.androidx.espresso.core)
   androidTestImplementation(libs.androidx.junit)
   androidTestImplementation(libs.androidx.runner)
-  debugImplementation(libs.androidx.compose.ui.test.manifest)
 }

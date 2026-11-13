@@ -22,7 +22,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import com.example.ui.components.AppIcons
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,7 +29,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -38,14 +36,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.FileItem
 import com.example.model.formatBytes
+import com.example.ui.components.AppIcons
 import com.example.ui.components.AppTopBar
 import com.example.ui.components.RadarAnimation
-import com.example.ui.theme.NeonCyan
-import com.example.ui.theme.SurfaceCard
-import com.example.ui.theme.SurfaceCardBorder
-import com.example.ui.theme.TextMuted
-import com.example.ui.theme.TextPrimary
-import com.example.ui.theme.TextSecondary
 
 @Composable
 fun RadarScreen(
@@ -56,6 +49,7 @@ fun RadarScreen(
     onRescanClick: () -> Unit,
     onDeviceClick: (WifiP2pDevice) -> Unit
 ) {
+    val colors = MaterialTheme.colorScheme
     val totalSizeBytes = remember(selectedFiles) {
         selectedFiles.sumOf { it.sizeBytes }
     }
@@ -66,7 +60,7 @@ fun RadarScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(colors.background)
             .testTag("radar_screen")
     ) {
         AppTopBar(
@@ -85,13 +79,13 @@ fun RadarScreen(
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(12.dp))
-                    .background(SurfaceCard)
-                    .border(1.dp, SurfaceCardBorder, RoundedCornerShape(12.dp))
-                    .padding(horizontal = 14.dp, vertical = 6.dp)
+                    .background(colors.surfaceVariant)
+                    .border(1.dp, colors.outline, RoundedCornerShape(12.dp))
+                    .padding(horizontal = 14.dp, vertical = 8.dp)
             ) {
                 Text(
                     text = "${selectedFiles.size} FILES • $totalFormattedSize",
-                    color = NeonCyan,
+                    color = colors.primary,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -100,16 +94,16 @@ fun RadarScreen(
             IconButton(
                 onClick = onRescanClick,
                 modifier = Modifier
-                    .size(38.dp)
+                    .size(48.dp)
                     .clip(CircleShape)
-                    .background(SurfaceCard)
-                    .border(1.dp, SurfaceCardBorder, CircleShape)
+                    .background(colors.surfaceVariant)
+                    .border(1.dp, colors.outline, CircleShape)
                     .testTag("rescan_button")
             ) {
                 Icon(
                     imageVector = AppIcons.Refresh,
                     contentDescription = "Rescan",
-                    tint = NeonCyan,
+                    tint = colors.primary,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -125,14 +119,14 @@ fun RadarScreen(
         ) {
             RadarAnimation(
                 modifier = Modifier.fillMaxSize(),
-                radarColor = NeonCyan
+                radarColor = colors.primary
             )
         }
 
         // Discovered Devices List
         Text(
             text = "SEARCHING FOR DEVICES (${peers.size})",
-            color = TextSecondary,
+            color = colors.onSurfaceVariant,
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
@@ -156,7 +150,7 @@ fun RadarScreen(
                     ) {
                         Text(
                             text = if (isScanning) "SEARCHING..." else "NO DEVICES FOUND",
-                            color = TextMuted,
+                            color = colors.outlineVariant,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -181,12 +175,14 @@ private fun DeviceItemCard(
     testTag: String,
     onConnectClick: () -> Unit
 ) {
+    val colors = MaterialTheme.colorScheme
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(SurfaceCard)
-            .border(1.dp, SurfaceCardBorder, RoundedCornerShape(16.dp))
+            .background(colors.surfaceVariant)
+            .border(1.dp, colors.outline, RoundedCornerShape(16.dp))
             .clickable { onConnectClick() }
             .padding(16.dp)
             .testTag(testTag),
@@ -201,14 +197,14 @@ private fun DeviceItemCard(
                 modifier = Modifier
                     .size(44.dp)
                     .clip(CircleShape)
-                    .background(NeonCyan.copy(alpha = 0.15f))
-                    .border(1.dp, NeonCyan.copy(alpha = 0.4f), CircleShape),
+                    .background(colors.primary.copy(alpha = 0.15f))
+                    .border(1.dp, colors.primary.copy(alpha = 0.4f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = AppIcons.Devices,
                     contentDescription = null,
-                    tint = NeonCyan,
+                    tint = colors.primary,
                     modifier = Modifier.size(22.dp)
                 )
             }
@@ -218,7 +214,7 @@ private fun DeviceItemCard(
             Column {
                 Text(
                     text = if (device.deviceName.isNullOrBlank()) "Android Device" else device.deviceName,
-                    color = TextPrimary,
+                    color = colors.onSurface,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
@@ -227,7 +223,7 @@ private fun DeviceItemCard(
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = device.deviceAddress,
-                    color = TextMuted,
+                    color = colors.outlineVariant,
                     fontSize = 12.sp
                 )
             }
@@ -238,13 +234,13 @@ private fun DeviceItemCard(
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(10.dp))
-                .background(NeonCyan)
+                .background(colors.primary)
                 .clickable { onConnectClick() }
-                .padding(horizontal = 14.dp, vertical = 8.dp)
+                .padding(horizontal = 14.dp, vertical = 10.dp)
         ) {
             Text(
                 text = "CONNECT",
-                color = Color(0xFF00363F),
+                color = colors.onPrimary,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.ExtraBold
             )

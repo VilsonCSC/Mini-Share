@@ -117,22 +117,30 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         var size = 0L
         val mime = context.contentResolver.getType(uri) ?: "*/*"
 
-        try {
-            val cursor: Cursor? = context.contentResolver.query(uri, null, null, null, null)
-            cursor?.use {
-                if (it.moveToFirst()) {
-                    val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                    val sizeIndex = it.getColumnIndex(OpenableColumns.SIZE)
-                    if (nameIndex != -1) {
-                        name = it.getString(nameIndex) ?: name
-                    }
-                    if (sizeIndex != -1) {
-                        size = it.getLong(sizeIndex)
+        if (uri.scheme == android.content.ContentResolver.SCHEME_FILE) {
+            uri.path?.let { path ->
+                val file = java.io.File(path)
+                if (file.name.isNotBlank()) name = file.name
+                if (file.exists()) size = file.length()
+            }
+        } else {
+            try {
+                val cursor: Cursor? = context.contentResolver.query(uri, null, null, null, null)
+                cursor?.use {
+                    if (it.moveToFirst()) {
+                        val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                        val sizeIndex = it.getColumnIndex(OpenableColumns.SIZE)
+                        if (nameIndex != -1) {
+                            name = it.getString(nameIndex) ?: name
+                        }
+                        if (sizeIndex != -1) {
+                            size = it.getLong(sizeIndex)
+                        }
                     }
                 }
+            } catch (e: Exception) {
+                Log.e("MainViewModel", "Error query URI", e)
             }
-        } catch (e: Exception) {
-            Log.e("MainViewModel", "Error query URI", e)
         }
 
         // If size is still 0, try AssetFileDescriptor then stream
@@ -283,6 +291,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 } else it
             }
         }
+    }
+
+    fun onAppForegrounded() {
+        wifiDirectManager.ensureRegistered()
+    }
+
+    fun onAppBackgrounded() {
+        resetToHome()
+        wifiDirectManager.unregister()
     }
 
     fun resetToHome() {
