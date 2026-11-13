@@ -29,6 +29,14 @@ Discover nearby devices, connect without a router or internet connection, and cr
 ### P2P Sharing
 Files are exchanged directly between the connected devices rather than uploaded to a cloud service. Bluetooth discovery helpers are also included in the app.
 
+## Screenshots
+
+<p align="center">
+  <img src="https://github.com/VilsonCSC/Mini-Share/blob/main/public/assets/aistudio/screenshot-home.svg?raw=true" alt="Mini Share home screen with Send and Receive options" width="260" />
+  <img src="https://github.com/VilsonCSC/Mini-Share/blob/main/public/assets/aistudio/screenshot-searching.svg?raw=true" alt="Mini Share searching screen" width="260" />
+  <img src="https://github.com/VilsonCSC/Mini-Share/blob/main/public/assets/aistudio/screenshot-receive.svg?raw=true" alt="Mini Share receive screen" width="260" />
+</p>
+
 ## Technology
 
 - **Primary language:** Kotlin
