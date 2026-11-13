@@ -1,0 +1,6 @@
+{
+  "name": "Mini Share",
+  "description": "Ultra-lite offline Wi-Fi Direct P2P file sharing between devices by Vilson Sonkar.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
